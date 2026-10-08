@@ -33,19 +33,10 @@ services:
       - /var/lib/docker:/var/lib/docker:ro
 
   node-exporter:
-    image: prom/node-exporter:latest
-    container_name: node-exporter
-    restart: unless-stopped
-
-    command:
-      - "--path.rootfs=/host"
-
-    expose:
-      - "9100"
-
-    volumes:
-      - "/:/host:ro,rslave"
-
+      image: prom/node-exporter:latest
+      restart: always
+      ports:
+        - "9100:9100"
   blackbox-exporter:
     image: prom/blackbox-exporter:latest
     container_name: blackbox-exporter
