@@ -1,13 +1,9 @@
-blackbox-exporter:
-  image: prom/blackbox-exporter:latest
-  container_name: blackbox-exporter
-  restart: unless-stopped
+modules:
+  http_2xx:
+    prober: http
+    timeout: 10s
 
-  command:
-    - "--config.file=/etc/blackbox_exporter/config.yml"
-
-  volumes:
-    - ./files/blackbox.yml:/etc/blackbox_exporter/config.yml:ro
-
-  expose:
-    - "9115"
+    http:
+      method: GET
+      preferred_ip_protocol: ip4
+      follow_redirects: true
