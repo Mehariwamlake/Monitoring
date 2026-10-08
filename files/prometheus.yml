@@ -54,6 +54,11 @@ scrape_configs:
           - https://learn.techvision.edu.et
           - https://erp.techvision.et
           - https://n8n.techvision.et
+          - https://techvision.et
+          - https://techvision.edu.et
+          
+
+
 
     relabel_configs:
       - source_labels:
