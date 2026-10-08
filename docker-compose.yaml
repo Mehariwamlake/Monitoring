@@ -60,7 +60,9 @@ services:
       - "--config.file=/etc/blackbox_exporter/config.yml"
 
     volumes:
-      - ../files/blackbox.yml:/etc/blackbox_exporter/config.yml:ro
+      - ./files/blackbox.yml:/etc/blackbox_exporter/config.yml:ro
+      
+      
 
     expose:
       - "9115"

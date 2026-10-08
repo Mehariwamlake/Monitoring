@@ -1,0 +1,13 @@
+blackbox-exporter:
+  image: prom/blackbox-exporter:latest
+  container_name: blackbox-exporter
+  restart: unless-stopped
+
+  command:
+    - "--config.file=/etc/blackbox_exporter/config.yml"
+
+  volumes:
+    - ./files/blackbox.yml:/etc/blackbox_exporter/config.yml:ro
+
+  expose:
+    - "9115"
