@@ -53,10 +53,10 @@ scrape_configs:
       - targets:
           - https://learn.techvision.edu.et
           - https://erp.techvision.et
-          - https://n8n.techvision.et
+          - https://n8n.techvision.edu.et
           - https://techvision.et
           - https://techvision.edu.et
-          
+
 
 
 
