@@ -1,11 +1,68 @@
-global:
-  scrape_interval: 5s
+# Prometheus Configuration
+# https://prometheus.io/docs/prometheus/latest/configuration/configuration/
 
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    monitor: 'dokploy-prometheus'
+
+# Alertmanager configuration (optional)
+# alerting:
+#   alertmanagers:
+#     - static_configs:
+#         - targets:
+#           - 'alertmanager:9093'
+
+# Load rules once and periodically evaluate them
+# rule_files:
+#   - "alerts.yml"
+
+# Scrape configurations
 scrape_configs:
-  - job_name: 'lms-node'
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # Example: Add your own targets here
+  - job_name: 'node_exporter_185.170.198.250'
     static_configs:
       - targets: ['185.170.198.250:9100']
-
-  - job_name: 'lms-docker'
+      
+  - job_name: 'node_exporter_72.62.115.40'
     static_configs:
-      - targets: ['185.170.198.250:8081']
+      - targets: ['72.62.115.40:9100']
+      
+  - job_name: cadvisor
+    scrape_interval: 5s
+    static_configs:
+      - targets: ['72.62.115.40:8081']
+  #- job_name: 'docker'
+  #   static_configs:
+  #     - targets: ['docker-host:9323']
+  - job_name: "blackbox-http"
+
+    metrics_path: /probe
+
+    params:
+      module:
+        - http_2xx
+
+    static_configs:
+      - targets:
+          - https://learn.techvision.edu.et
+          - https://erp.techvision.et
+          - https://n8n.techvision.et
+
+    relabel_configs:
+      - source_labels:
+          - __address__
+        target_label: __param_target
+
+      - source_labels:
+          - __param_target
+        target_label: instance
+
+      - target_label: __address__
+        replacement: blackbox-exporter:9115
