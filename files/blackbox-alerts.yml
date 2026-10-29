@@ -22,14 +22,7 @@ groups:
           summary: "Slow website: {{ $labels.instance }}"
           description: "Website response time has exceeded 5 seconds for 5 minutes."
 
-      - alert: WebsiteRecoveredProbe
-        expr: probe_success{job="blackbox-http"} == 1
-        for: 0s
-        labels:
-          severity: info
-        annotations:
-          summary: "Website is responding: {{ $labels.instance }}"
-          description: "The website health check is successful."
+
 
   # ==========================================
   # 2. SSL CERTIFICATE EXPIRATION
