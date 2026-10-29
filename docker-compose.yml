@@ -11,6 +11,7 @@ services:
 
     volumes:
       - ./files/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./files/blackbox-alerts.yml:/etc/prometheus/blackbox-alerts.yml:ro
       - prometheus-data:/prometheus
 
     depends_on:

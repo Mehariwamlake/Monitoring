@@ -1,30 +1,29 @@
 groups:
   - name: blackbox-alerts
     rules:
-
       - alert: WebsiteDown
-        expr: probe_success == 0
+        expr: probe_success{job="blackbox-http"} == 0
         for: 2m
         labels:
           severity: critical
         annotations:
-          summary: "Website is down: {{ $labels.instance }}"
-          description: "The website has failed its health check for at least 2 minutes."
+          summary: "Website down: {{ $labels.instance }}"
+          description: "The website has failed its health check for 2 minutes."
 
       - alert: WebsiteSlow
-        expr: probe_duration_seconds > 3
+        expr: probe_duration_seconds{job="blackbox-http"} > 5
         for: 5m
         labels:
           severity: warning
         annotations:
           summary: "Slow website: {{ $labels.instance }}"
-          description: "The website has taken more than 3 seconds to respond for 5 minutes."
+          description: "The website health check is taking more than 5 seconds."
 
       - alert: SSLCertificateExpiringSoon
-        expr: (probe_ssl_earliest_cert_expiry - time()) / 86400 < 14
+        expr: probe_ssl_earliest_cert_expiry{job="blackbox-http"} - time() < 86400 * 14
         for: 10m
         labels:
           severity: warning
         annotations:
-          summary: "SSL certificate expiring: {{ $labels.instance }}"
+          summary: "SSL certificate expiring soon: {{ $labels.instance }}"
           description: "The SSL certificate expires in less than 14 days."
