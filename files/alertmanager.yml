@@ -1,0 +1,29 @@
+global:
+  resolve_timeout: 5m
+
+route:
+  receiver: telegram
+  group_by:
+    - alertname
+    - instance
+  group_wait: 10s
+  group_interval: 1m
+  repeat_interval: 4h
+
+receivers:
+  - name: telegram
+    telegram_configs:
+      - bot_token: "6511455683:AAEqqPzsB_z2wuP-bInr_x1voxe47qtwqiY"
+        chat_id: -1004431200886
+        send_resolved: true
+        parse_mode: HTML
+        message: |
+          {{ if eq .Status "firing" }}🚨 <b>ALERT FIRING</b>{{ else }}✅ <b>ALERT RESOLVED</b>{{ end }}
+          {{ range .Alerts }}
+          <b>{{ .Labels.alertname }}</b>
+          <b>Website:</b> {{ .Labels.instance }}
+          <b>Severity:</b> {{ .Labels.severity }}
+          <b>Summary:</b> {{ .Annotations.summary }}
+          <b>Details:</b> {{ .Annotations.description }}
+          <b>Started:</b> {{ .StartsAt }}
+          {{ end }}

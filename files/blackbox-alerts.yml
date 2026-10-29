@@ -8,7 +8,7 @@ groups:
           severity: critical
         annotations:
           summary: "Website down: {{ $labels.instance }}"
-          description: "The website has failed its health check for 2 minutes."
+          description: "The website has failed its health check for at least 2 minutes."
 
       - alert: WebsiteSlow
         expr: probe_duration_seconds{job="blackbox-http"} > 5
@@ -17,10 +17,10 @@ groups:
           severity: warning
         annotations:
           summary: "Slow website: {{ $labels.instance }}"
-          description: "The website health check is taking more than 5 seconds."
+          description: "The website health check has taken more than 5 seconds for at least 5 minutes."
 
       - alert: SSLCertificateExpiringSoon
-        expr: probe_ssl_earliest_cert_expiry{job="blackbox-http"} - time() < 86400 * 14
+        expr: (probe_ssl_earliest_cert_expiry{job="blackbox-http"} - time()) < (86400 * 14)
         for: 10m
         labels:
           severity: warning
