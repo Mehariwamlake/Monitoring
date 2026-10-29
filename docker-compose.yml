@@ -18,6 +18,7 @@ services:
       - cadvisor
       - node-exporter
       - blackbox-exporter
+      - alertmanager
 
   cadvisor:
     image: gcr.io/cadvisor/cadvisor:latest
@@ -56,6 +57,18 @@ services:
 
     expose:
       - "9115"
-
+  alertmanager:
+    image: prom/alertmanager:latest
+    container_name: alertmanager
+    restart: unless-stopped
+    command:
+      - "--config.file=/etc/alertmanager/alertmanager.yml"
+      - "--storage.path=/alertmanager"
+    volumes:
+      - ./files/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - alertmanager-data:/alertmanager
+    expose:
+      - "9093"
 volumes:
   prometheus-data:
+  alertmanager-data:
