@@ -1,5 +1,8 @@
 groups:
-  - name: blackbox-alerts
+  # ==========================================
+  # 1. WEBSITE AVAILABILITY AND PERFORMANCE
+  # ==========================================
+  - name: website-alerts
     rules:
       - alert: WebsiteDown
         expr: probe_success{job="blackbox-http"} == 0
@@ -7,8 +10,8 @@ groups:
         labels:
           severity: critical
         annotations:
-          summary: "Website down: {{ $labels.instance }}"
-          description: "The website has failed its health check for at least 2 minutes."
+          summary: "Website is down: {{ $labels.instance }}"
+          description: "The website has failed its HTTP health check for 2 minutes."
 
       - alert: WebsiteSlow
         expr: probe_duration_seconds{job="blackbox-http"} > 5
@@ -17,13 +20,197 @@ groups:
           severity: warning
         annotations:
           summary: "Slow website: {{ $labels.instance }}"
-          description: "The website health check has taken more than 5 seconds for at least 5 minutes."
+          description: "Website response time has exceeded 5 seconds for 5 minutes."
 
+      - alert: WebsiteRecoveredProbe
+        expr: probe_success{job="blackbox-http"} == 1
+        for: 0s
+        labels:
+          severity: info
+        annotations:
+          summary: "Website is responding: {{ $labels.instance }}"
+          description: "The website health check is successful."
+
+  # ==========================================
+  # 2. SSL CERTIFICATE EXPIRATION
+  # ==========================================
+  - name: ssl-alerts
+    rules:
       - alert: SSLCertificateExpiringSoon
-        expr: (probe_ssl_earliest_cert_expiry{job="blackbox-http"} - time()) < (86400 * 14)
+        expr: |
+          (probe_ssl_earliest_cert_expiry{job="blackbox-http"} - time()) > 0
+          and
+          (probe_ssl_earliest_cert_expiry{job="blackbox-http"} - time()) < 1209600
         for: 10m
         labels:
           severity: warning
         annotations:
-          summary: "SSL certificate expiring soon: {{ $labels.instance }}"
-          description: "The SSL certificate expires in less than 14 days."
+          summary: "SSL certificate expires soon: {{ $labels.instance }}"
+          description: "The SSL certificate expires in fewer than 14 days."
+
+      - alert: SSLCertificateExpiresSoonCritical
+        expr: |
+          (probe_ssl_earliest_cert_expiry{job="blackbox-http"} - time()) > 0
+          and
+          (probe_ssl_earliest_cert_expiry{job="blackbox-http"} - time()) < 259200
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "SSL certificate expires in fewer than 3 days: {{ $labels.instance }}"
+          description: "Renew the SSL certificate immediately."
+
+  # ==========================================
+  # 3. SERVER CPU
+  # ==========================================
+  - name: server-cpu-alerts
+    rules:
+      - alert: HighCPUUsage
+        expr: |
+          100 * (
+            1 - avg by (instance) (
+              rate(node_cpu_seconds_total{mode="idle"}[5m])
+            )
+          ) > 85
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU usage: {{ $labels.instance }}"
+          description: "CPU usage has exceeded 85% for 10 minutes."
+
+      - alert: CriticalCPUUsage
+        expr: |
+          100 * (
+            1 - avg by (instance) (
+              rate(node_cpu_seconds_total{mode="idle"}[5m])
+            )
+          ) > 95
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Critical CPU usage: {{ $labels.instance }}"
+          description: "CPU usage has exceeded 95% for 5 minutes."
+
+  # ==========================================
+  # 4. SERVER MEMORY
+  # ==========================================
+  - name: server-memory-alerts
+    rules:
+      - alert: HighMemoryUsage
+        expr: |
+          100 * (
+            1 -
+            node_memory_MemAvailable_bytes
+            /
+            node_memory_MemTotal_bytes
+          ) > 85
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage: {{ $labels.instance }}"
+          description: "Memory usage has exceeded 85% for 10 minutes."
+
+      - alert: CriticalMemoryUsage
+        expr: |
+          100 * (
+            1 -
+            node_memory_MemAvailable_bytes
+            /
+            node_memory_MemTotal_bytes
+          ) > 95
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Critical memory usage: {{ $labels.instance }}"
+          description: "Memory usage has exceeded 95% for 5 minutes."
+
+  # ==========================================
+  # 5. SERVER DISK SPACE
+  # ==========================================
+  - name: server-disk-alerts
+    rules:
+      - alert: DiskSpaceLow
+        expr: |
+          100 * (
+            1 -
+            node_filesystem_avail_bytes{
+              fstype!~"tmpfs|devtmpfs|overlay|squashfs|ramfs",
+              mountpoint!~"/run($|/).*"
+            }
+            /
+            node_filesystem_size_bytes{
+              fstype!~"tmpfs|devtmpfs|overlay|squashfs|ramfs",
+              mountpoint!~"/run($|/).*"
+            }
+          ) > 80
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Disk space running low: {{ $labels.instance }}"
+          description: "Disk usage exceeds 80% on {{ $labels.mountpoint }}."
+
+      - alert: DiskSpaceCritical
+        expr: |
+          100 * (
+            1 -
+            node_filesystem_avail_bytes{
+              fstype!~"tmpfs|devtmpfs|overlay|squashfs|ramfs",
+              mountpoint!~"/run($|/).*"
+            }
+            /
+            node_filesystem_size_bytes{
+              fstype!~"tmpfs|devtmpfs|overlay|squashfs|ramfs",
+              mountpoint!~"/run($|/).*"
+            }
+          ) > 90
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Disk almost full: {{ $labels.instance }}"
+          description: "Disk usage exceeds 90% on {{ $labels.mountpoint }}."
+
+  # ==========================================
+  # 6. MONITORING TARGET HEALTH
+  # ==========================================
+  - name: monitoring-health-alerts
+    rules:
+      - alert: MonitoringTargetDown
+        expr: up == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Monitoring target is down: {{ $labels.job }}"
+          description: "Target {{ $labels.instance }} has been unreachable for 2 minutes."
+
+      - alert: PrometheusConfigurationReloadFailed
+        expr: prometheus_config_last_reload_successful == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Prometheus configuration reload failed"
+          description: "Prometheus failed to reload its configuration."
+
+  # ==========================================
+  # 7. BACKUP MONITORING
+  # ==========================================
+  # Enable this rule only after you configure a
+  # backup exporter or publish a backup status metric.
+  #
+  # - name: backup-alerts
+  #   rules:
+  #     - alert: BackupFailed
+  #       expr: backup_last_successful_timestamp_seconds < time() - 86400
+  #       for: 5m
+  #       labels:
+  #         severity: critical
+  #       annotations:
+  #         summary: "Backup is overdue"
+  #         description: "No successful backup has been reported in 24 hours."
